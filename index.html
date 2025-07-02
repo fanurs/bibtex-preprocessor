@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BibTeX Title Protector</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .info {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #555;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h3 {
+            margin-top: 0;
+            color: #444;
+        }
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 15px auto;
+            display: block;
+        }
+        button:hover {
+            background: #c82333;
+        }
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #28a745;
+            min-height: 20px;
+        }
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>BibTeX Title Protector</h1>
+    <div class="info">
+        Automatically protects BibTeX titles by adding double curly brackets to preserve capitalization.<br>
+        Titles already protected with double brackets are left unchanged.
+    </div>
+    
+    <button onclick="clearAll()">Clear All</button>
+    
+    <div class="container">
+        <div class="panel">
+            <h3>Input BibTeX</h3>
+            <textarea id="input" placeholder="Paste your .bib content here..."></textarea>
+        </div>
+        <div class="panel">
+            <h3>Protected BibTeX</h3>
+            <textarea id="output" placeholder="Protected titles will appear here..." readonly></textarea>
+        </div>
+    </div>
+    
+    <div class="status" id="status"></div>
+
+    <script>
+        function protectBibTexTitles(bibText) {
+            // Regex to match title fields - captures the entire line including the value
+            const titleRegex = /^(\s*title\s*=\s*)(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/gim;
+            
+            let protectedCount = 0;
+            let alreadyProtectedCount = 0;
+            
+            const result = bibText.replace(titleRegex, (match, prefix, titleValue) => {
+                // Check if already has double brackets
+                const trimmedValue = titleValue.trim();
+                if (trimmedValue.startsWith('{{') && trimmedValue.endsWith('}}')) {
+                    // Already protected, don't modify
+                    alreadyProtectedCount++;
+                    return match;
+                }
+                
+                // Remove outer single brackets and add double brackets
+                let innerTitle = titleValue.slice(1, -1).trim();
+                protectedCount++;
+                return prefix + '{{' + innerTitle + '}}';
+            });
+            
+            // Update status message
+            updateStatus(protectedCount, alreadyProtectedCount);
+            
+            return result;
+        }
+        
+        function updateStatus(protectedCount, alreadyProtectedCount) {
+            const status = document.getElementById('status');
+            if (protectedCount === 0 && alreadyProtectedCount === 0) {
+                status.textContent = '';
+            } else {
+                let message = [];
+                if (protectedCount > 0) {
+                    message.push(`Protected ${protectedCount} title${protectedCount !== 1 ? 's' : ''}`);
+                }
+                if (alreadyProtectedCount > 0) {
+                    message.push(`${alreadyProtectedCount} already protected`);
+                }
+                status.textContent = '✓ ' + message.join(', ');
+            }
+        }
+        
+        function processText() {
+            const input = document.getElementById('input').value;
+            if (input.trim()) {
+                const output = protectBibTexTitles(input);
+                document.getElementById('output').value = output;
+            } else {
+                document.getElementById('output').value = '';
+                document.getElementById('status').textContent = '';
+            }
+        }
+        
+        function clearAll() {
+            document.getElementById('input').value = '';
+            document.getElementById('output').value = '';
+            document.getElementById('status').textContent = '';
+        }
+        
+        // Auto-process on input
+        document.getElementById('input').addEventListener('input', function() {
+            processText();
+        });
+        
+        // Auto-process on paste with slight delay
+        document.getElementById('input').addEventListener('paste', function() {
+            setTimeout(() => processText(), 10);
+        });
+    </script>
+</body>
+</html>
